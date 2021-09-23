@@ -48,20 +48,21 @@ func main() {
 		normalExit()
 	}
 
+	numLinks := len(links)
+
 	// Download links
-	fmt.Printf("%d file's to download...\n", len(links))
-	complete := downloadLinks(links, len(links))
-	fmt.Printf("%d of %d files downloaded completely.\n\n", complete, len(links))
+	fmt.Printf("%d file's to download...\n", numLinks)
+	complete := downloadLinks(links, numLinks)
+	fmt.Printf("%d of %d files downloaded completely.\n\n", complete, numLinks)
 
 	fmt.Println("Renaming files...")
-	renameFiles(len(links))
-	fmt.Printf("%d of %d files renamed successfully.\n\n", complete, len(links))
+	renameFiles(numLinks)
+	fmt.Printf("%d of %d files renamed successfully.\n\n", complete, numLinks)
 	normalExit()
 } // End main
 
-func getFileName() string {
+func getFileName() (choice string) {
 	files := getCwdEmailList()
-	var choice string
 	for {
 		fmt.Println("Please select the email to open.")
 		fmt.Println()
@@ -90,14 +91,11 @@ func getFileName() string {
 		fmt.Println("\nInvalid entry, please try again.")
 		fmt.Println()
 	}
-	return choice
+	return
 }
 
-func getCwdEmailList() []string {
-	var (
-		listing []string
-		fTypes  = []string{"htm", "html", "eml"}
-	)
+func getCwdEmailList() (listing []string) {
+	var fTypes = []string{"htm", "html", "eml"}
 
 	list, err := ioutil.ReadDir(".")
 	check(err)
@@ -107,7 +105,7 @@ func getCwdEmailList() []string {
 			listing = append(listing, f.Name())
 		}
 	}
-	return listing
+	return
 }
 
 func existsIn(list []string, a string) bool {
@@ -119,11 +117,13 @@ func existsIn(list []string, a string) bool {
 	return false
 }
 
-func getRawFileDataAsStr(filename string) string {
+func getRawFileDataAsStr(filename string) (str string) {
 	if strings.Contains(filename, "eml") {
-		return string(getEMLContent(filename))
+		str = string(getEMLContent(filename))
+	} else {
+		str = string(getHTMLContent(filename))
 	}
-	return string(getHTMLContent(filename))
+	return
 }
 
 func getEMLContent(filename string) string {
@@ -134,18 +134,10 @@ func getEMLContent(filename string) string {
 		fmt.Println("Data not base64 encoded.")
 		fmt.Println()
 		return html
-	} // else {
+	}
 	fmt.Println("Data is base64 encoded.")
 	fmt.Println()
 	return string(decoded)
-	// }
-	// return retVal
-}
-
-func getHTMLContent(filename string) string {
-	temp, err := os.ReadFile(filename)
-	check(err)
-	return string(temp)
 }
 
 func getEmailContent(filename string) parsemail.Email {
@@ -165,14 +157,10 @@ func getEmailContent(filename string) parsemail.Email {
 	return email
 }
 
-func convertToUTF8(data string) string {
-	content, err := gonvert.New(data, gonvert.UTF8).Convert()
-	if err != nil {
-		fmt.Println("Failed to Convert: ", err)
-		pause()
-		os.Exit(1)
-	}
-	return content
+func getHTMLContent(filename string) string {
+	temp, err := os.ReadFile(filename)
+	check(err)
+	return string(temp)
 }
 
 func getBytesReaderFromFile(filename string) *bytes.Reader {
@@ -183,6 +171,16 @@ func getBytesReaderFromFile(filename string) *bytes.Reader {
 		os.Exit(1)
 	}
 	return bytes.NewReader(dat)
+}
+
+func convertToUTF8(data string) string {
+	content, err := gonvert.New(data, gonvert.UTF8).Convert()
+	if err != nil {
+		fmt.Println("Failed to Convert: ", err)
+		pause()
+		os.Exit(1)
+	}
+	return content
 }
 
 // Link ...
@@ -260,6 +258,7 @@ func downloadFile(link Link, useLinkName bool, pathOptional ...string) error {
 
 	// Decide whether to use link.text as filename
 	// or the name that the server gives us
+	// Right now we only use link.text as filename
 	if useLinkName {
 		filename = fmt.Sprintf("%s/%s", path, link.text)
 	} else {
@@ -301,8 +300,7 @@ func renameFiles(total int) {
 	}
 }
 
-func getPdfFiles() []string {
-	var pdfList []string
+func getPdfFiles() (pdfList []string) {
 	files, err := ioutil.ReadDir(".")
 	if err != nil {
 		log.Fatal(err)
@@ -313,7 +311,7 @@ func getPdfFiles() []string {
 			pdfList = append(pdfList, name)
 		}
 	}
-	return pdfList
+	return
 }
 
 func readPdf(path string) (string, error) {
