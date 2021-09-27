@@ -62,7 +62,7 @@ func main() {
 } // End main
 
 func getFileName() (choice string) {
-	files := getCwdEmailList()
+	files := GetCwdEmailList()
 	for {
 		fmt.Println("Please select the email to open.")
 		fmt.Println()
@@ -94,23 +94,28 @@ func getFileName() (choice string) {
 	return
 }
 
-func getCwdEmailList() (listing []string) {
+// GetCwdEmailList returns a []string with the names of each file that could
+// be an email file name in the current working directory.
+func GetCwdEmailList() (listing []string) {
 	var fTypes = []string{"htm", "html", "eml"}
 
 	list, err := ioutil.ReadDir(".")
 	check(err)
 
 	for _, f := range list {
-		if existsIn(fTypes, f.Name()) {
+		if HasSuffix(fTypes, f.Name()) {
 			listing = append(listing, f.Name())
 		}
 	}
 	return
 }
 
-func existsIn(list []string, a string) bool {
+// HasSuffix receives a list of strings and another string aStr to be checked.
+// If any string in the list is a suffix of aStr, then HasSuffix will return
+// true. Otherwise, it will return false.
+func HasSuffix(list []string, aStr string) bool {
 	for _, b := range list {
-		if strings.HasSuffix(a, strings.ToLower(b)) {
+		if strings.HasSuffix(aStr, strings.ToLower(b)) {
 			return true
 		}
 	}
