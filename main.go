@@ -24,6 +24,12 @@ import (
 	"golang.org/x/net/html"
 )
 
+type Entry struct {
+	location string
+	invoice  string
+	total    string
+}
+
 func check(err error) {
 	if err != nil {
 		fmt.Printf("Failed in check(): %s\n", err)
