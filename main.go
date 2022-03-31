@@ -57,10 +57,15 @@ func main() {
 	numLinks := len(links)
 
 	// Download links
+	/* TODO: Add error checking to see if any downloads failed */
 	fmt.Printf("%d file's to download...\n", numLinks)
 	complete := downloadLinks(links, numLinks)
 	fmt.Printf("%d of %d files downloaded completely.\n\n", complete, numLinks)
 
+	// Gather data for future CSV output
+	/* TODO: Add data gathering function */
+
+	// Rename files
 	fmt.Println("Renaming files...")
 	renameFiles(numLinks)
 	fmt.Printf("%d of %d files renamed successfully.\n\n", complete, numLinks)
