@@ -24,12 +24,6 @@ import (
 	"golang.org/x/net/html"
 )
 
-type Entry struct {
-	location string
-	invoice  string
-	total    string
-}
-
 func check(err error) {
 	if err != nil {
 		fmt.Printf("Failed in check(): %s\n", err)
@@ -63,12 +57,15 @@ func main() {
 	fmt.Printf("%d of %d files downloaded completely.\n\n", complete, numLinks)
 
 	// Gather data for future CSV output
-	/* TODO: Add data gathering function */
+	csvData := getDataFromFiles(numLinks)
 
 	// Rename files
 	fmt.Println("Renaming files...")
-	renameFiles(numLinks)
+	for i, invoice := range csvData {
+		renameFile(i, len(csvData), invoice)
+	}
 	fmt.Printf("%d of %d files renamed successfully.\n\n", complete, numLinks)
+
 	normalExit()
 } // End main
 
@@ -300,20 +297,50 @@ func downloadFile(link Link, useLinkName bool, pathOptional ...string) error {
 	return err
 }
 
-func renameFiles(total int) {
-	pdf.DebugOn = true
+// CSVEntry ...
+type CSVEntry struct {
+	originalFileName string
+	newFileName      string
+	location         string
+	locationEscaped  string
+	invoice          string
+	total            string
+}
 
-	files := getPdfFiles()
-	for i, file := range files {
-		invoice, err := readPdf(file) // Read local pdf file
-		if err != nil {
-			panic(err)
-		}
-		billToName := getShipToName(invoice)
-		src, dest := file, strings.Join([]string{billToName, file}, "_")
-		fmt.Printf("Renaming %d of %d: %s to %s\n", (i + 1), total, src, dest)
-		os.Rename(src, dest)
+func newEntry(fileName string) *CSVEntry {
+	e := CSVEntry{originalFileName: fileName}
+
+	invoice, err := readPdf(fileName) // Read local pdf file
+	if err != nil {
+		panic(err)
 	}
+	e.location, e.locationEscaped = getShipToName(invoice)
+	e.newFileName = strings.Join([]string{e.locationEscaped, e.originalFileName}, "_")
+	e.total = "0.00"
+
+	return &e
+}
+
+func getDataFromFiles(total int) []CSVEntry {
+	pdf.DebugOn = true
+	files := getPdfFiles()
+	var csvEntries []CSVEntry
+
+	for _, file := range files {
+		csvEntries = append(csvEntries, *newEntry(file))
+	}
+	return csvEntries
+}
+
+func renameFile(index int, total int, entry CSVEntry) {
+	os.Rename(entry.originalFileName, entry.newFileName)
+	fmt.Printf(
+		"Renaming %d of %d: %s to %s\n",
+		(index + 1),
+		total,
+		entry.originalFileName,
+		entry.newFileName,
+	)
 }
 
 func getPdfFiles() (pdfList []string) {
@@ -346,11 +373,15 @@ func readPdf(path string) (string, error) {
 	return buf.String(), nil
 }
 
-func getShipToName(pdfStr string) string {
+func getShipToName(pdfStr string) (string, string) {
 	var re = regexp.MustCompile(`('|,)`)
 	var inParens = false
 	pdfStr = pdfStr[strings.Index(pdfStr, "SHIP TO:")+8:]
+	var pdfStrEscaped string
 
+	// Loop through pdfStr one character at a time (RUNE)
+	// until curChar is a number digit after a close paren
+	// that marks the end of the "Ship To" name.
 	for i, curChar := range pdfStr {
 		if string(curChar) == "(" {
 			inParens = true
@@ -363,12 +394,13 @@ func getShipToName(pdfStr string) string {
 			}
 		}
 		if unicode.IsDigit(curChar) {
-			pdfStr = strings.Replace(pdfStr[:i], " ", "_", -1)
+			pdfStr = pdfStr[:i]
+			pdfStrEscaped = strings.Replace(pdfStr, " ", "_", -1)
+			pdfStrEscaped = re.ReplaceAllString(pdfStrEscaped, ``)
 			break
 		}
 	}
-	pdfStr = re.ReplaceAllString(pdfStr, ``)
-	return pdfStr
+	return pdfStr, pdfStrEscaped
 }
 
 func normalExit() {
