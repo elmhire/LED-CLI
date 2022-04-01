@@ -168,21 +168,21 @@ func getRawFileDataAsStr(filename string) (str string) {
 	return
 }
 
-func getEMLContent(filename string) string {
+func getEMLContent(filename string) (decodedString string) {
 	email := getEmailContent(filename)
 	html := email.HTMLBody
 	decoded, err := base64.StdEncoding.DecodeString(html)
 	if err != nil {
-		fmt.Println("Data not base64 encoded.")
-		fmt.Println()
-		return html
+		fmt.Printf("Data not base64 encoded.\n\n")
+		decodedString = html
+		return
 	}
-	fmt.Println("Data is base64 encoded.")
-	fmt.Println()
-	return string(decoded)
+	fmt.Printf("Data is base64 encoded.\n\n")
+	decodedString = string(decoded)
+	return
 }
 
-func getEmailContent(filename string) parsemail.Email {
+func getEmailContent(filename string) (email parsemail.Email) {
 	rd := getBytesReaderFromFile(filename)
 
 	email, err := parsemail.Parse(rd)
@@ -196,33 +196,36 @@ func getEmailContent(filename string) parsemail.Email {
 		pause()
 		os.Exit(1)
 	}
-	return email
+	return
 }
 
-func getHTMLContent(filename string) string {
-	temp, err := os.ReadFile(filename)
+func getHTMLContent(fn string) (c string) {
+	temp, err := os.ReadFile(fn)
 	check(err)
-	return string(temp)
+
+	c = string(temp)
+	return
 }
 
-func getBytesReaderFromFile(filename string) *bytes.Reader {
-	dat, err := os.ReadFile(filename)
+func getBytesReaderFromFile(fn string) (br *bytes.Reader) {
+	dat, err := os.ReadFile(fn)
 	if err != nil {
-		log.Printf("Failed opening %s: %s", filename, err)
+		log.Printf("Failed opening %s: %s", fn, err)
 		pause()
 		os.Exit(1)
 	}
-	return bytes.NewReader(dat)
+	br = bytes.NewReader(dat)
+	return
 }
 
-func convertToUTF8(data string) string {
-	content, err := gonvert.New(data, gonvert.UTF8).Convert()
+func convertToUTF8(dat string) (s string) {
+	s, err := gonvert.New(dat, gonvert.UTF8).Convert()
 	if err != nil {
 		fmt.Println("Failed to Convert: ", err)
 		pause()
 		os.Exit(1)
 	}
-	return content
+	return
 }
 
 // Link ...
@@ -231,9 +234,7 @@ type Link struct {
 	text string
 }
 
-func extractLinks(htmlText string) ([]Link, error) {
-	var links []Link
-
+func extractLinks(htmlText string) (links []Link, e error) {
 	node, err := html.Parse(strings.NewReader(htmlText))
 	check(err)
 
@@ -261,13 +262,13 @@ func extractLinks(htmlText string) ([]Link, error) {
 	}
 	f(node)
 	if links == nil {
-		return nil, errors.New("no links found")
+		e = errors.New("no links found")
+		return
 	}
-	return links, nil
+	return
 }
 
-func downloadLinks(links []Link, total int) int {
-	complete := 0
+func downloadLinks(links []Link, total int) (complete int) {
 	for _, link := range links {
 		fmt.Printf("Downloading %s %d of %d...", link.text, (complete + 1), total)
 		err := downloadFile(link, true)
@@ -278,10 +279,10 @@ func downloadLinks(links []Link, total int) int {
 		fmt.Printf("\tcomplete.\n")
 		complete++
 	}
-	return complete
+	return
 }
 
-func downloadFile(link Link, useLinkName bool, pathOptional ...string) error {
+func downloadFile(link Link, useLinkName bool, pathOptional ...string) (err error) {
 	var (
 		path     string
 		filename string
@@ -323,7 +324,7 @@ func downloadFile(link Link, useLinkName bool, pathOptional ...string) error {
 	_, err = io.Copy(out, response.Body)
 	out.Close()
 
-	return err
+	return
 }
 
 // CSVEntry ...
@@ -335,8 +336,8 @@ type CSVEntry struct {
 	total            string
 }
 
-func newEntry(fileName string) *CSVEntry {
-	e := CSVEntry{originalFileName: fileName}
+func newEntry(fileName string) (e *CSVEntry) {
+	e = &CSVEntry{originalFileName: fileName}
 
 	invoice, err := readPdf(fileName) // Read local pdf file
 	if err != nil {
@@ -347,18 +348,17 @@ func newEntry(fileName string) *CSVEntry {
 	e.newFileName = strings.Join([]string{escapeString(e.location), e.originalFileName}, "_")
 	e.total = getTotal(invoice)
 
-	return &e
+	return
 }
 
-func getDataFromFiles() []CSVEntry {
+func getDataFromFiles() (csvEntries []CSVEntry) {
 	pdf.DebugOn = true
 	files := getPdfFiles()
-	var csvEntries []CSVEntry
 
 	for _, file := range files {
 		csvEntries = append(csvEntries, *newEntry(file))
 	}
-	return csvEntries
+	return
 }
 
 func getPdfFiles() (pdfList []string) {
@@ -375,7 +375,7 @@ func getPdfFiles() (pdfList []string) {
 	return
 }
 
-func readPdf(path string) (string, error) {
+func readPdf(path string) (bs string, err error) {
 	f, r, err := pdf.Open(path)
 	// remember close file
 	defer f.Close()
@@ -385,13 +385,15 @@ func readPdf(path string) (string, error) {
 	var buf bytes.Buffer
 	b, err := r.GetPlainText()
 	if err != nil {
-		return "", err
+		bs = ""
+		return
 	}
 	buf.ReadFrom(b)
-	return buf.String(), nil
+	bs = buf.String()
+	return
 }
 
-func getShipToName(pdfStr string) string {
+func getShipToName(pdfStr string) (s string) {
 	var inParens = false
 	pdfStr = pdfStr[strings.Index(pdfStr, "SHIP TO:")+8:]
 
@@ -410,11 +412,11 @@ func getShipToName(pdfStr string) string {
 			}
 		}
 		if unicode.IsDigit(curChar) {
-			pdfStr = pdfStr[:i]
+			s = strings.TrimSpace(pdfStr[:i])
 			break
 		}
 	}
-	return strings.TrimSpace(pdfStr)
+	return
 }
 
 func getTotal(pdfStr string) string {
@@ -425,11 +427,11 @@ func getTotal(pdfStr string) string {
 	)
 }
 
-func escapeString(str string) string {
+func escapeString(str string) (s string) {
 	var re = regexp.MustCompile(`('|,)`)
-	str = strings.Replace(str, " ", "_", -1)
-	str = re.ReplaceAllString(str, ``)
-	return str
+	s = strings.Replace(str, " ", "_", -1)
+	s = re.ReplaceAllString(s, ``)
+	return
 }
 
 func renameFile(index int, total int, entry CSVEntry) {
