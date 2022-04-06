@@ -1,4 +1,4 @@
-module LED-CLI
+module github.com/elmhire/LED-CLI
 
 go 1.18
 
