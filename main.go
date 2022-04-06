@@ -50,13 +50,10 @@ func main() {
 		normalExit()
 	}
 
-	numLinks := len(links)
-
 	// Download links
-	/* TODO: Add error checking to see if any downloads failed */
-	fmt.Printf("%d file's to download...\n", numLinks)
-	complete := downloadLinks(links, numLinks)
-	fmt.Printf("%d of %d files downloaded completely.\n\n", complete, numLinks)
+	fmt.Printf("%d file's to download...\n", len(links))
+	complete := downloadLinks(links)
+	fmt.Printf("%d of %d files downloaded completely.\n\n", complete, len(links))
 
 	// Gather data for future CSV output
 	fmt.Printf("Parsing downloaded data... ")
@@ -93,7 +90,7 @@ func main() {
 	for i, invoice := range csvData {
 		renameFile(i, len(csvData), invoice)
 	}
-	fmt.Printf("%d of %d files renamed successfully.\n\n", complete, numLinks)
+	fmt.Printf("%d of %d files renamed successfully.\n\n", complete, len(links))
 
 	normalExit()
 } // End main
@@ -268,9 +265,9 @@ func extractLinks(htmlText string) (links []Link, e error) {
 	return
 }
 
-func downloadLinks(links []Link, total int) (complete int) {
-	for _, link := range links {
-		fmt.Printf("Downloading %s %d of %d...", link.text, (complete + 1), total)
+func downloadLinks(links []Link) (complete int) {
+	for i, link := range links {
+		fmt.Printf("Downloading %s %d of %d...", link.text, i+1, len(links))
 		err := downloadFile(link, true)
 		if err != nil {
 			fmt.Printf("\terror, incomplete!\n")
