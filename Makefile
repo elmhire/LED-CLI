@@ -1,7 +1,7 @@
 ## LED-CLI Makefile
 
 run: vet
-	go run ./main.go
+	go run LED-CLI
 
 build: vet
 	go build -o LED-CLI ./main.go
