@@ -122,8 +122,7 @@ func getFileName() (choice string) {
 			break
 		}
 		// else
-		fmt.Println("\nInvalid entry, please try again.")
-		fmt.Println()
+		fmt.Printf("\nInvalid entry, please try again.\n")
 	}
 	return
 }
@@ -424,11 +423,12 @@ func getTotal(pdfStr string) string {
 	)
 }
 
-func escapeString(str string) (s string) {
-	var re = regexp.MustCompile(`('|,)`)
-	s = strings.Replace(str, " ", "_", -1)
-	s = re.ReplaceAllString(s, ``)
-	return
+func escapeString(str string) string {
+	// var re = regexp.MustCompile(`('|,)`)
+	return regexp.MustCompile(`('|,)`).ReplaceAllString(
+		strings.Replace(str, " ", "_", -1),
+		``,
+	)
 }
 
 func renameFile(index int, total int, entry CSVEntry) {
