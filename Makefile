@@ -1,10 +1,4 @@
 ## LED-CLI Makefile
-run_installed: install
-	go run
-
-install: vet
-	go install
-
 run: vet
 	go run main.go
 
