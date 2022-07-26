@@ -323,8 +323,8 @@ func downloadFile(link Link, useLinkName bool, pathOptional ...string) (err erro
 	return
 }
 
-// CSVEntry ...
-type CSVEntry struct {
+// CSVEntry_T ...
+type CSVEntry_T struct {
 	originalFileName string
 	newFileName      string
 	location         string
@@ -332,8 +332,8 @@ type CSVEntry struct {
 	total            string
 }
 
-func newEntry(fileName string) (e *CSVEntry) {
-	e = &CSVEntry{originalFileName: fileName}
+func newEntry(fileName string) (e *CSVEntry_T) {
+	e = &CSVEntry_T{originalFileName: fileName}
 
 	invoice, err := readPdf(fileName) // Read local pdf file
 	if err != nil {
@@ -347,7 +347,7 @@ func newEntry(fileName string) (e *CSVEntry) {
 	return
 }
 
-func getDataFromFiles() (csvEntries []CSVEntry) {
+func getDataFromFiles() (csvEntries []CSVEntry_T) {
 	pdf.DebugOn = true
 	files := getPdfFiles()
 
@@ -416,10 +416,11 @@ func getShipToName(pdfStr string) (s string) {
 }
 
 func getTotal(pdfStr string) string {
-	var pleaseLoc = strings.Index(pdfStr, "Please")
+	var totalLoc = strings.LastIndex(pdfStr, "TOTAL") + len("TOTAL")
+	// var total = totalLoc + 5
 	return strings.TrimSpace(
 		strings.Trim(
-			pdfStr[pleaseLoc-8:pleaseLoc], "$"),
+			pdfStr[totalLoc:totalLoc+8], "$"),
 	)
 }
 
@@ -431,7 +432,7 @@ func escapeString(str string) string {
 	)
 }
 
-func renameFile(index int, total int, entry CSVEntry) {
+func renameFile(index int, total int, entry CSVEntry_T) {
 	os.Rename(entry.originalFileName, entry.newFileName)
 	fmt.Printf(
 		"Renaming %d of %d: %s to %s\n",
